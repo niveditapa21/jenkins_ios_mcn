@@ -13,17 +13,35 @@ pipeline {
                 expression { return params.RUN_INSTALL }
             }
             steps {
-                sh '''
-                echo "Installing prerequisites..."
-                sudo apt-get remove --purge -y containerd
-                sudo apt-get autoremove -y
-                sudo apt-mark unhold containerd || true
-                sudo apt-get update -y
-                sudo apt-get install -y containerd.io git curl make net-tools pipx python3-venv sshpass netplan.io iptables jq sed
-                pipx install --include-deps ansible || true
-                pipx ensurepath
-                make --version
-                '''
+                script {
+                    // Check if sudo is available and required
+                    def useSudo = sh(script: "command -v sudo > /dev/null && echo true || echo false", returnStdout: true).trim() == "true"
+
+                    // Run installation commands with or without sudo
+                    if (useSudo) {
+                        sh '''
+                        echo "Installing prerequisites with sudo..."
+                        sudo apt-get remove --purge -y containerd || true
+                        sudo apt-get autoremove -y
+                        sudo apt-get update -y
+                        sudo apt-get install -y containerd.io git curl make net-tools pipx python3-venv sshpass netplan.io iptables jq sed
+                        sudo pipx install --include-deps ansible || true
+                        sudo pipx ensurepath
+                        make --version
+                        '''
+                    } else {
+                        sh '''
+                        echo "Installing prerequisites without sudo..."
+                        apt-get remove --purge -y containerd || true
+                        apt-get autoremove -y
+                        apt-get update -y
+                        apt-get install -y containerd.io git curl make net-tools pipx python3-venv sshpass netplan.io iptables jq sed
+                        pipx install --include-deps ansible || true
+                        pipx ensurepath
+                        make --version
+                        '''
+                    }
+                }
             }
         }
 
