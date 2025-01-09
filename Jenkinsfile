@@ -19,14 +19,14 @@ pipeline {
                 script {
                     echo "Starting prerequisites setup..."
                 }
-                sh '''
+                sh '''#!/bin/bash
                     # Remove Conflicting Packages
                     sudo apt-get remove --purge -y containerd
                     sudo apt-get autoremove -y
                     sudo apt-mark unhold containerd || true
                     sudo apt-get update -y
                 '''
-                sh '''
+                sh '''#!/bin/bash
                     # Install Required Tools and Dependencies
                     if [ ! -f /usr/share/keyrings/docker-archive-keyring.gpg ]; then
                         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
@@ -40,7 +40,7 @@ pipeline {
                     pipx install --include-deps ansible || true
                     pipx ensurepath
                 '''
-                sh '''
+                sh '''#!/bin/bash
                     # Validate Installations
                     make --version
                     echo "Prerequisites setup complete."
@@ -52,7 +52,9 @@ pipeline {
                 script {
                     echo "Starting the build process..."
                 }
-                sh '''
+                sh '''#!/bin/bash
+                    # Checkout the specified branch
+                    git checkout ${params.BRANCH_NAME}
                     # Example build step
                     echo "Building project from branch: ${params.BRANCH_NAME}"
                     # Add actual build commands here
@@ -65,12 +67,12 @@ pipeline {
                     echo "Starting deployment process..."
                 }
                 withCredentials([usernamePassword(credentialsId: 'ghcr-credentials', usernameVariable: 'GHCRUSER', passwordVariable: 'GHCRPASS')]) {
-                    sh '''
+                    sh '''#!/bin/bash
                         # Docker Authentication for GHCR
                         echo "$GHCRPASS" | sudo docker login ${params.DOCKER_REPO_URL} -u "$GHCRUSER" --password-stdin
                     '''
                 }
-                sh '''
+                sh '''#!/bin/bash
                     # Example deployment commands
                     echo "Deploying components to Kubernetes..."
                     # Add actual deployment commands here
@@ -82,16 +84,26 @@ pipeline {
                 script {
                     echo "Starting installation process..."
                 }
-                sh '''
+                sh '''#!/bin/bash
                     # Install Kubernetes Components
                     make aether-k8s-install
                 '''
-                sh '''
+                sh '''#!/bin/bash
                     # Install SD-Core
                     make aether-5gc-install
                     kubectl get pods -n ${params.K8S_NAMESPACE}
                 '''
             }
+        }
+    }
+    post {
+        success {
+            echo "Pipeline completed successfully!"
+            // Add notifications (e.g., email or Slack) if needed
+        }
+        failure {
+            echo "Pipeline failed!"
+            // Add failure notifications if needed
         }
     }
 }
