@@ -39,20 +39,9 @@ pipeline {
                     pipx ensurepath
                 '''
                 sh '''
-                    # Install kubectl
-                    if ! command -v kubectl &> /dev/null; then
-                        echo "kubectl not found. Installing kubectl..."
-                        curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-                        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-                    else
-                        echo "kubectl already installed."
-                    fi
-                '''
-                sh '''
                     # Validate Installations
                     make --version
                     docker --version
-                    kubectl version --client
                     echo "Prerequisites setup complete."
                 '''
             }
@@ -95,12 +84,12 @@ pipeline {
                     echo "Starting installation process..."
                 }
                 sh '''
-                    # Install Kubernetes Components using kubectl
-                    kubectl apply -f kubernetes/install.yaml
+                    # Install Kubernetes Components
+                    make aether-k8s-install
                 '''
                 sh '''
-                    # Install SD-Core using kubectl
-                    kubectl apply -f sdcore/install.yaml
+                    # Install SD-Core
+                    make aether-5gc-install
                     kubectl get pods -n ${K8S_NAMESPACE}
                 '''
             }
