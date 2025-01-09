@@ -28,10 +28,6 @@ pipeline {
                 '''
                 sh '''
                     # Install Docker, Make, and other required dependencies
-                    if ! command -v make &> /dev/null; then
-                        echo "Make not found. Installing Make..."
-                        sudo apt-get install -y make
-                    fi
                     if ! command -v docker &> /dev/null; then
                         echo "Docker not found. Installing Docker..."
                         curl -fsSL https://get.docker.com | sudo sh
@@ -42,7 +38,6 @@ pipeline {
                 '''
                 sh '''
                     # Validate Installations
-                    make --version
                     docker --version
                     echo "Prerequisites setup complete."
                 '''
@@ -86,29 +81,48 @@ pipeline {
                     echo "Starting installation process..."
                 }
                 sh '''
-                    # Check if the Makefile exists
-                    if [ ! -f Makefile ]; then
-                        echo "Makefile not found, creating one..."
-
-                        # Create a Makefile with proper formatting
-                        printf "aether-k8s-install:\\n\\t# Add actual installation commands for Kubernetes components\\n\\techo \\"Installing Aether Kubernetes components...\\"\\n\\tkubectl apply -f aether-k8s-install.yaml\\n\\n" > Makefile
-
-                        printf "aether-5gc-install:\\n\\t# Add actual installation commands for SD-Core\\n\\techo \\"Installing Aether 5GC components...\\"\\n\\tkubectl apply -f aether-5gc-install.yaml\\n" >> Makefile
+                    # Apply Kubernetes configurations for Aether components
+                    if [ ! -f aether-k8s-install.yaml ]; then
+                        echo "aether-k8s-install.yaml not found, creating one..."
+                        cat <<EOL > aether-k8s-install.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aether-k8s-example
+  namespace: ${K8S_NAMESPACE}
+spec:
+  containers:
+  - name: example-container
+    image: busybox
+    command: ["sleep", "3600"]
+EOL
                     fi
+                    echo "Applying Kubernetes configuration for Aether Kubernetes components..."
+                    kubectl apply -f aether-k8s-install.yaml
 
-                    # Print the Makefile for debugging purposes
-                    echo "Generated Makefile contents:"
-                    cat Makefile
+                    # Apply Kubernetes configurations for SD-Core
+                    if [ ! -f aether-5gc-install.yaml ]; then
+                        echo "aether-5gc-install.yaml not found, creating one..."
+                        cat <<EOL > aether-5gc-install.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: aether-5gc-service
+  namespace: ${K8S_NAMESPACE}
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  selector:
+    app: aether-5gc
+EOL
+                    fi
+                    echo "Applying Kubernetes configuration for Aether 5GC components..."
+                    kubectl apply -f aether-5gc-install.yaml
 
-                    # List all available targets in the Makefile
-                    make -n
-
-                    # Run the installation with the make target
-                    make aether-k8s-install
-                '''
-                sh '''
-                    # Install SD-Core using make
-                    make aether-5gc-install
+                    # Verify installation
+                    echo "Fetching Kubernetes Pods in namespace: ${K8S_NAMESPACE}..."
                     kubectl get pods -n ${K8S_NAMESPACE}
                 '''
             }
