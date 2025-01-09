@@ -19,30 +19,29 @@ pipeline {
                 script {
                     echo "Starting prerequisites setup..."
                 }
-                sh '''#!/bin/bash
+                sh '''
                     # Remove Conflicting Packages
                     sudo apt-get remove --purge -y containerd
                     sudo apt-get autoremove -y
                     sudo apt-mark unhold containerd || true
                     sudo apt-get update -y
                 '''
-                sh '''#!/bin/bash
-                    # Install Required Tools and Dependencies
-                    if [ ! -f /usr/share/keyrings/docker-archive-keyring.gpg ]; then
-                        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                sh '''
+                    # Install Docker and other required dependencies
+                    if ! command -v docker &> /dev/null; then
+                        echo "Docker not found. Installing Docker..."
+                        curl -fsSL https://get.docker.com | sudo sh
                     else
-                        echo "Docker keyring already exists. Skipping creation."
+                        echo "Docker already installed."
                     fi
-                    sudo chmod a+r /usr/share/keyrings/docker-archive-keyring.gpg
-                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                    sudo apt-get update -y
                     sudo apt-get install -y containerd.io git curl make net-tools pipx python3-venv sshpass netplan.io iptables jq sed
                     pipx install --include-deps ansible || true
                     pipx ensurepath
                 '''
-                sh '''#!/bin/bash
+                sh '''
                     # Validate Installations
                     make --version
+                    docker --version
                     echo "Prerequisites setup complete."
                 '''
             }
@@ -52,7 +51,7 @@ pipeline {
                 script {
                     echo "Starting the build process..."
                 }
-                sh '''#!/bin/bash
+                sh '''
                     # Checkout the specified branch
                     git checkout ${BRANCH_NAME}
                     # Example build step
@@ -67,12 +66,12 @@ pipeline {
                     echo "Starting deployment process..."
                 }
                 withCredentials([usernamePassword(credentialsId: '08fde406-6aa2-4233-b7a7-3510b1f1b951', usernameVariable: 'GHCRUSER', passwordVariable: 'GHCRPASS')]) {
-                    sh '''#!/bin/bash
+                    sh '''
                         # Docker Authentication for GHCR
                         echo "$GHCRPASS" | sudo docker login ${DOCKER_REPO_URL} -u "$GHCRUSER" --password-stdin
                     '''
                 }
-                sh '''#!/bin/bash
+                sh '''
                     # Example deployment commands
                     echo "Deploying components to Kubernetes..."
                     # Add actual deployment commands here
@@ -84,11 +83,11 @@ pipeline {
                 script {
                     echo "Starting installation process..."
                 }
-                sh '''#!/bin/bash
+                sh '''
                     # Install Kubernetes Components
                     make aether-k8s-install
                 '''
-                sh '''#!/bin/bash
+                sh '''
                     # Install SD-Core
                     make aether-5gc-install
                     kubectl get pods -n ${K8S_NAMESPACE}
@@ -99,11 +98,9 @@ pipeline {
     post {
         success {
             echo "Pipeline completed successfully!"
-            // Add notifications (e.g., email or Slack) if needed
         }
         failure {
             echo "Pipeline failed!"
-            // Add failure notifications if needed
         }
     }
 }
