@@ -91,6 +91,8 @@ pipeline {
                     pipx ensurepath
                   
                     ansible --version
+                    rm -rf aether-onramp
+
                     git clone --recursive https://github.com/opennetworkinglab/aether-onramp.git
                     cd aether-onramp
                     make aether-k8s-install
