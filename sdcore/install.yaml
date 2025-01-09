@@ -1,0 +1,35 @@
+# sdcore/install.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sd-core-deployment
+  namespace: omec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sd-core
+  template:
+    metadata:
+      labels:
+        app: sd-core
+    spec:
+      containers:
+      - name: sd-core
+        image: sd-core-image:latest
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sd-core-service
+  namespace: omec
+spec:
+  selector:
+    app: sd-core
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
