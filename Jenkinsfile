@@ -90,12 +90,17 @@ pipeline {
                     if [ ! -f Makefile ]; then
                         echo "Makefile not found, creating one..."
 
-                        # Create a simple Makefile dynamically
+                        # Create a simple Makefile dynamically with correct indentation (tab for commands)
                         cat <<EOL > Makefile
 aether-k8s-install:
-    # Add actual installation commands for Kubernetes components
-    echo "Installing Aether Kubernetes components..."
-    kubectl apply -f aether-k8s-install.yaml
+\t# Add actual installation commands for Kubernetes components
+\techo "Installing Aether Kubernetes components..."
+\tkubectl apply -f aether-k8s-install.yaml
+
+aether-5gc-install:
+\t# Add actual installation commands for SD-Core
+\techo "Installing Aether 5GC components..."
+\tkubectl apply -f aether-5gc-install.yaml
 EOL
                     fi
                     # List all available targets in the Makefile
