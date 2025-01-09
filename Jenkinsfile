@@ -27,17 +27,20 @@ pipeline {
                     sudo apt-get update -y
                 '''
                 sh '''
-                    # Install Docker, Make, and other required dependencies
+                    # Install Docker and other required dependencies
                     if ! command -v docker &> /dev/null; then
                         echo "Docker not found. Installing Docker..."
                         curl -fsSL https://get.docker.com | sudo sh
+                    else
+                        echo "Docker already installed."
                     fi
-                    sudo apt-get install -y containerd.io git curl net-tools pipx python3-venv sshpass netplan.io iptables jq sed
+                    sudo apt-get install -y containerd.io git curl make net-tools pipx python3-venv sshpass netplan.io iptables jq sed
                     pipx install --include-deps ansible || true
                     pipx ensurepath
                 '''
                 sh '''
                     # Validate Installations
+                    make --version
                     docker --version
                     echo "Prerequisites setup complete."
                 '''
@@ -81,48 +84,12 @@ pipeline {
                     echo "Starting installation process..."
                 }
                 sh '''
-                    # Apply Kubernetes configurations for Aether components
-                    if [ ! -f aether-k8s-install.yaml ]; then
-                        echo "aether-k8s-install.yaml not found, creating one..."
-                        cat <<EOL > aether-k8s-install.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: aether-k8s-example
-  namespace: ${K8S_NAMESPACE}
-spec:
-  containers:
-  - name: example-container
-    image: busybox
-    command: ["sleep", "3600"]
-EOL
-                    fi
-                    echo "Applying Kubernetes configuration for Aether Kubernetes components..."
-                    kubectl apply -f aether-k8s-install.yaml
-
-                    # Apply Kubernetes configurations for SD-Core
-                    if [ ! -f aether-5gc-install.yaml ]; then
-                        echo "aether-5gc-install.yaml not found, creating one..."
-                        cat <<EOL > aether-5gc-install.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: aether-5gc-service
-  namespace: ${K8S_NAMESPACE}
-spec:
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-  selector:
-    app: aether-5gc
-EOL
-                    fi
-                    echo "Applying Kubernetes configuration for Aether 5GC components..."
-                    kubectl apply -f aether-5gc-install.yaml
-
-                    # Verify installation
-                    echo "Fetching Kubernetes Pods in namespace: ${K8S_NAMESPACE}..."
+                    # Install Kubernetes Components
+                    make aether-k8s-install
+                '''
+                sh '''
+                    # Install SD-Core
+                    make aether-5gc-install
                     kubectl get pods -n ${K8S_NAMESPACE}
                 '''
             }
