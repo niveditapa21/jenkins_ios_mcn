@@ -14,12 +14,13 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Remove Conflicting Packages & Installing Prerequisites') {
+        stage('Remove Conflicting Packages & installing Prerequisites') {
             steps {
                 script {
-                    echo "Removing conflicting packages & setting up prerequisites..."
+                    echo "remove conflicting packages & prerequisites setup..."
                 }
                 sh '''
+                    
                     sudo apt-get remove --purge -y containerd
                     sudo apt-get autoremove -y
                     sudo apt-mark unhold containerd || true
@@ -37,16 +38,26 @@ pipeline {
                     pipx install --include-deps ansible || true
                     pipx ensurepath
                 '''
+                sh '''
+                    # Validate Installations
+                    make --version
+                    docker --version
+                    echo "Prerequisites setup complete."
+                '''
             }
         }
-        stage('Fetch SSH Key from Jenkins Credentials') {
+        stage('Build') {
             steps {
                 script {
-                    echo "Fetching SSH key from Jenkins credentials store..."
+                    echo "Starting the build process..."
                 }
-                withCredentials([sshUserPrivateKey(credentialsId: 'my-ssh-key', keyFileVariable: 'SSH_KEY_PATH', usernameVariable: 'SSH_USER')]) {
-                    echo "SSH Key retrieved."
-                }
+                sh '''
+                    # Checkout the specified branch
+                    git checkout ${BRANCH_NAME}
+                    # Example build step
+                    echo "Building project from branch: ${BRANCH_NAME}"
+                    # Add actual build commands here
+                '''
             }
         }
         stage('Deploy') {
@@ -54,11 +65,16 @@ pipeline {
                 script {
                     echo "Starting deployment process..."
                 }
+                withCredentials([usernamePassword(credentialsId: '08fde406-6aa2-4233-b7a7-3510b1f1b951', usernameVariable: 'GHCRUSER', passwordVariable: 'GHCRPASS')]) {
+                    sh '''
+                        # Docker Authentication for GHCR
+                        echo "$GHCRPASS" | sudo docker login ${DOCKER_REPO_URL} -u "$GHCRUSER" --password-stdin
+                    '''
+                }
                 sh '''
-                    # Run the Ansible playbook using the SSH private key retrieved from Jenkins credentials store
-                    ansible-playbook -i /var/lib/jenkins/workspace/pipeline/hosts.ini --tags install \
-                        --private-key ${SSH_KEY_PATH} --extra-vars "ROOT_DIR=/var/lib/jenkins/workspace/pipeline" \
-                        --extra-vars "@/var/lib/jenkins/workspace/pipeline/vars/main.yml"
+                    # Example deployment commands
+                    echo "Deploying components to Kubernetes..."
+                    # Add actual deployment commands here
                 '''
             }
         }
@@ -73,7 +89,7 @@ pipeline {
                     sudo apt install sshpass python3-venv pipx make git
                     pipx install --include-deps ansible
                     pipx ensurepath
-                    
+                  
                     ansible --version
                     rm -rf aether-onramp
 
