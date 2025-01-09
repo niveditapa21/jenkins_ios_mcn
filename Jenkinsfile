@@ -40,8 +40,8 @@ pipeline {
                 '''
                 sh '''
                     # Validate Installations
-                    make --version
                     docker --version
+                    kubectl version --client
                     echo "Prerequisites setup complete."
                 '''
             }
@@ -84,12 +84,19 @@ pipeline {
                     echo "Starting installation process..."
                 }
                 sh '''
-                    # Install Kubernetes Components
-                    make aether-k8s-install
-                '''
-                sh '''
-                    # Install SD-Core
-                    make aether-5gc-install
+                    # Install Kubernetes components directly
+                    echo "Installing Kubernetes components..."
+                    kubectl create deployment my-deployment --image=nginx  # Example Kubernetes installation
+                    kubectl expose deployment my-deployment --type=LoadBalancer --port=8080  # Expose service for testing
+                    
+                    # Wait for a minute to ensure deployment is ready (you can use kubectl wait for more sophisticated checks)
+                    sleep 60
+
+                    # Install SD-Core components directly
+                    echo "Installing SD-Core components..."
+                    kubectl apply -f https://example.com/sd-core-deployment.yaml  # Example SD-Core YAML URL
+
+                    # Verify if the pods are running
                     kubectl get pods -n ${K8S_NAMESPACE}
                 '''
             }
