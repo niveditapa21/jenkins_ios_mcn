@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'self-hosted' } // Use a self-hosted Jenkins agent
+    agent any
     parameters {
         string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'The branch name to check out the code from')
         string(name: 'DOCKER_REPO_URL', defaultValue: 'ghcr.io/your-repo', description: 'The Docker repository URL for authentication')
