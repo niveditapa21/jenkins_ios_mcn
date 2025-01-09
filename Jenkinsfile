@@ -39,17 +39,14 @@ pipeline {
                 '''
             }
         }
-        stage('Build') {
+        stage('Fetch SSH Key from Jenkins Credentials') {
             steps {
                 script {
-                    echo "Starting the build process..."
+                    echo "Fetching SSH key from Jenkins credentials store..."
                 }
-                sh '''
-                    # Checkout the specified branch
-                    git checkout ${BRANCH_NAME}
-                    # Example build step
-                    echo "Building project from branch: ${BRANCH_NAME}"
-                '''
+                withCredentials([sshUserPrivateKey(credentialsId: 'my-ssh-key', keyFileVariable: 'SSH_KEY_PATH', usernameVariable: 'SSH_USER')]) {
+                    echo "SSH Key retrieved."
+                }
             }
         }
         stage('Deploy') {
@@ -57,14 +54,12 @@ pipeline {
                 script {
                     echo "Starting deployment process..."
                 }
-                sshagent(['my-ssh-key']) {
-                    sh '''
-                        # Run the Ansible playbook using the SSH key from ssh-agent
-                        ansible-playbook -i /var/lib/jenkins/workspace/pipeline/hosts.ini --tags install \
-                            --extra-vars "ROOT_DIR=/var/lib/jenkins/workspace/pipeline" \
-                            --extra-vars "@/var/lib/jenkins/workspace/pipeline/vars/main.yml"
-                    '''
-                }
+                sh '''
+                    # Run the Ansible playbook using the SSH private key retrieved from Jenkins credentials store
+                    ansible-playbook -i /var/lib/jenkins/workspace/pipeline/hosts.ini --tags install \
+                        --private-key ${SSH_KEY_PATH} --extra-vars "ROOT_DIR=/var/lib/jenkins/workspace/pipeline" \
+                        --extra-vars "@/var/lib/jenkins/workspace/pipeline/vars/main.yml"
+                '''
             }
         }
         stage('Installation') {
