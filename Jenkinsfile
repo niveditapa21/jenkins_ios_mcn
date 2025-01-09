@@ -17,22 +17,21 @@ pipeline {
         stage('Remove Conflicting Packages & installing Prerequisites') {
             steps {
                 script {
-                    echo "remove conflicting packages & prerequisites setup..."
+                    echo "Removing conflicting packages & installing prerequisites..."
                 }
                 sh '''
-                    
                     sudo apt-get remove --purge -y containerd
                     sudo apt-get autoremove -y
                     sudo apt-mark unhold containerd || true
                     sudo apt-get update -y
                 '''
                 sh '''
-                    # Install Docker and other required dependencies
+                    # Install Docker if not already installed
                     if ! command -v docker &> /dev/null; then
                         echo "Docker not found. Installing Docker..."
                         curl -fsSL https://get.docker.com | sudo sh
                     else
-                        echo "Docker already installed."
+                        echo "Docker is already installed."
                     fi
                     sudo apt-get install -y containerd.io git curl make net-tools pipx python3-venv sshpass netplan.io iptables jq sed
                     pipx install --include-deps ansible || true
@@ -53,6 +52,7 @@ pipeline {
                 }
                 sh '''
                     # Checkout the specified branch
+                    git fetch
                     git checkout ${BRANCH_NAME}
                     # Example build step
                     echo "Building project from branch: ${BRANCH_NAME}"
@@ -65,17 +65,19 @@ pipeline {
                 script {
                     echo "Starting deployment process..."
                 }
-                withCredentials([usernamePassword(credentialsId: '08fde406-6aa2-4233-b7a7-3510b1f1b951', usernameVariable: 'GHCRUSER', passwordVariable: 'GHCRPASS')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: 'my-ssh-key', keyFileVariable: 'jenkins')]) {
                     sh '''
-                        # Docker Authentication for GHCR
-                        echo "$GHCRPASS" | sudo docker login ${DOCKER_REPO_URL} -u "$GHCRUSER" --password-stdin
+                        # Set SSH private key for Ansible or Kubernetes deployment
+                        export SSH_KEY_PATH=$SSH_KEY
+                        export ANSIBLE_SSH_ARGS="-i $SSH_KEY_PATH"
+                        echo "SSH Key set. Proceeding with deployment..."
+                        
+                        # Example of running an Ansible playbook with SSH private key
+                        ansible-playbook -i /var/lib/jenkins/workspace/pipeline/hosts.ini --tags install \
+                            --extra-vars "ROOT_DIR=/var/lib/jenkins/workspace/pipeline" \
+                            --extra-vars "@/var/lib/jenkins/workspace/pipeline/vars/main.yml"
                     '''
                 }
-                sh '''
-                    # Example deployment commands
-                    echo "Deploying components to Kubernetes..."
-                    # Add actual deployment commands here
-                '''
             }
         }
         stage('Installation') {
@@ -89,7 +91,7 @@ pipeline {
                     sudo apt install sshpass python3-venv pipx make git
                     pipx install --include-deps ansible
                     pipx ensurepath
-                  
+                   
                     ansible --version
                     rm -rf aether-onramp
 
