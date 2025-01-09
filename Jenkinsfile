@@ -54,9 +54,9 @@ pipeline {
                 }
                 sh '''#!/bin/bash
                     # Checkout the specified branch
-                    git checkout ${params.BRANCH_NAME}
+                    git checkout ${BRANCH_NAME}
                     # Example build step
-                    echo "Building project from branch: ${params.BRANCH_NAME}"
+                    echo "Building project from branch: ${BRANCH_NAME}"
                     # Add actual build commands here
                 '''
             }
@@ -69,7 +69,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'ghcr-credentials', usernameVariable: 'GHCRUSER', passwordVariable: 'GHCRPASS')]) {
                     sh '''#!/bin/bash
                         # Docker Authentication for GHCR
-                        echo "$GHCRPASS" | sudo docker login ${params.DOCKER_REPO_URL} -u "$GHCRUSER" --password-stdin
+                        echo "$GHCRPASS" | sudo docker login ${DOCKER_REPO_URL} -u "$GHCRUSER" --password-stdin
                     '''
                 }
                 sh '''#!/bin/bash
@@ -91,7 +91,7 @@ pipeline {
                 sh '''#!/bin/bash
                     # Install SD-Core
                     make aether-5gc-install
-                    kubectl get pods -n ${params.K8S_NAMESPACE}
+                    kubectl get pods -n ${K8S_NAMESPACE}
                 '''
             }
         }
