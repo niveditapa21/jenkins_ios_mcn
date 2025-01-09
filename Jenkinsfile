@@ -84,11 +84,11 @@ pipeline {
                     echo "Starting installation process..."
                 }
                 sh '''
-                    # Install Kubernetes Components
+                    # Install Kubernetes Components using make
                     make aether-k8s-install
                 '''
                 sh '''
-                    # Install SD-Core
+                    # Install SD-Core using make
                     make aether-5gc-install
                     kubectl get pods -n ${K8S_NAMESPACE}
                 '''
