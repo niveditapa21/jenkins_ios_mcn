@@ -66,7 +66,7 @@ pipeline {
                 script {
                     echo "Starting deployment process..."
                 }
-                withCredentials([usernamePassword(credentialsId: 'ghcr-credentials', usernameVariable: 'GHCRUSER', passwordVariable: 'GHCRPASS')]) {
+                withCredentials([usernamePassword(credentialsId: '08fde406-6aa2-4233-b7a7-3510b1f1b951', usernameVariable: 'GHCRUSER', passwordVariable: 'GHCRPASS')]) {
                     sh '''#!/bin/bash
                         # Docker Authentication for GHCR
                         echo "$GHCRPASS" | sudo docker login ${DOCKER_REPO_URL} -u "$GHCRUSER" --password-stdin
