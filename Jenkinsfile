@@ -14,13 +14,13 @@ pipeline {
                 checkout scm
             }
         }
-        stage('Prerequisites') {
+        stage('Remove Conflicting Packages & installing Prerequisites') {
             steps {
                 script {
-                    echo "Starting prerequisites setup..."
+                    echo "remove conflicting packages & prerequisites setup..."
                 }
                 sh '''
-                    # Remove Conflicting Packages
+                    
                     sudo apt-get remove --purge -y containerd
                     sudo apt-get autoremove -y
                     sudo apt-mark unhold containerd || true
@@ -85,6 +85,14 @@ pipeline {
                 }
                 sh '''
                     # Install Kubernetes Components
+                    sudo apt install make
+                    sudo apt install sshpass python3-venv pipx make git
+                    pipx install --include-deps ansible
+                    pipx ensurepath
+                    source ~/.bashrc
+                    ansible --version
+                    git clone --recursive https://github.com/opennetworkinglab/aether-onramp.git
+                    cd aether-onramp
                     make aether-k8s-install
                 '''
                 sh '''
