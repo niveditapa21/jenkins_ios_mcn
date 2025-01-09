@@ -34,7 +34,7 @@ pipeline {
                         echo "Docker is already installed."
                     fi
                     sudo apt-get install -y containerd.io git curl make net-tools pipx python3-venv sshpass netplan.io iptables jq sed
-                    pipx install --include-deps ansible || true
+                    pipx install --include-deps ansible 
                     pipx ensurepath
                 '''
                 sh '''
@@ -65,7 +65,7 @@ pipeline {
                 script {
                     echo "Starting deployment process..."
                 }
-                withCredentials([sshUserPrivateKey(credentialsId: 'my-ssh-key', keyFileVariable: 'jenkins')]) {
+                withCredentials([sshUserPrivateKey(credentialsId: 'my-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''
                         # Set SSH private key for Ansible or Kubernetes deployment
                         export SSH_KEY_PATH=$SSH_KEY
