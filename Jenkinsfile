@@ -84,12 +84,12 @@ pipeline {
                     echo "Starting installation process..."
                 }
                 sh '''
-                    # Install Kubernetes Components using make
-                    make aether-k8s-install
+                    # Install Kubernetes Components using kubectl
+                    kubectl apply -f kubernetes/install.yaml  # Replace with your actual Kubernetes installation manifest
                 '''
                 sh '''
-                    # Install SD-Core using make
-                    make aether-5gc-install
+                    # Install SD-Core using kubectl
+                    kubectl apply -f sdcore/install.yaml  # Replace with your SD-Core installation manifest
                     kubectl get pods -n ${K8S_NAMESPACE}
                 '''
             }
