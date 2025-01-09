@@ -89,7 +89,7 @@ pipeline {
                     sudo apt install sshpass python3-venv pipx make git
                     pipx install --include-deps ansible
                     pipx ensurepath
-                    source ~/.bashrc
+                  
                     ansible --version
                     git clone --recursive https://github.com/opennetworkinglab/aether-onramp.git
                     cd aether-onramp
